@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Download } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Download, FilePlus2, Save } from 'lucide-react';
 import type { CommercialDocument, DocumentType } from '@/types/document';
 import { newDocument } from '@/domain/documents/factory';
 import { useDocumentReducer } from '@/hooks/useDocumentReducer';
@@ -11,6 +11,15 @@ import DocumentSheet from '@/components/preview/DocumentSheet';
 import Field from '@/components/ui/Field';
 import { downloadPdf, renderDocumentPdf } from '@/lib/pdf/render';
 import { documentProblems } from '@/domain/calculations/totals';
+import HistoryPanel from '@/components/history/HistoryPanel';
+import { duplicateDocument } from '@/domain/documents/factory';
+import {
+  getSnapshot,
+  loadSettings,
+  saveDocument,
+  saveSettings,
+  startSync,
+} from '@/lib/storage/documents';
 
 /** One sentence per fault, so the message is never a code. */
 const PROBLEM_TEXT: Record<string, string> = {
@@ -25,7 +34,11 @@ const PROBLEM_TEXT: Record<string, string> = {
 };
 
 export default function App() {
-  const [initial] = useState<CommercialDocument>(() => newDocument('quote', []));
+  const [initial] = useState<CommercialDocument>(() => {
+    // A returning user gets their own details back without retyping them.
+    const settings = loadSettings();
+    return newDocument('quote', getSnapshot().documents, settings.issuer ?? undefined);
+  });
   const [doc, dispatch] = useDocumentReducer(initial);
   const totals = useMemo(() => totalsFor(doc), [doc]);
   const problems = useMemo(() => documentProblems(doc), [doc]);
@@ -33,6 +46,26 @@ export default function App() {
     error: null,
     busy: false,
   });
+
+  /* Another tab saving or deleting should show up here too. */
+  useEffect(() => startSync(), []);
+
+  const [saved, setSaved] = useState<string | null>(null);
+
+  function save() {
+    saveDocument(doc);
+    // The issuer outlives any one document, so it is kept separately.
+    saveSettings(doc.issuer);
+    setSaved(doc.number);
+    window.setTimeout(() => setSaved(null), 2500);
+  }
+
+  function startNew(type: CommercialDocument['type'] = doc.type) {
+    dispatch({
+      type: 'replace',
+      document: newDocument(type, getSnapshot().documents, doc.issuer),
+    });
+  }
 
   function exportPdf() {
     setExportState({ error: null, busy: true });
@@ -71,6 +104,22 @@ export default function App() {
                 {problems.length} thing{problems.length === 1 ? '' : 's'} to fix
               </span>
             ) : null}
+            <button
+              type="button"
+              onClick={() => startNew()}
+              className="btn-quiet pressable inline-flex items-center gap-2"
+            >
+              <FilePlus2 aria-hidden="true" className="size-4" />
+              <span className="hidden sm:inline">New</span>
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              className="btn-quiet pressable inline-flex items-center gap-2"
+            >
+              <Save aria-hidden="true" className="size-4" />
+              <span className="hidden sm:inline">Save</span>
+            </button>
             <button
               type="button"
               onClick={exportPdf}
@@ -192,6 +241,17 @@ export default function App() {
             />
           </section>
 
+          <HistoryPanel
+            currentId={doc.id}
+            onOpen={(document) => dispatch({ type: 'replace', document })}
+            onDuplicate={(document) =>
+              dispatch({
+                type: 'replace',
+                document: duplicateDocument(document, getSnapshot().documents),
+              })
+            }
+          />
+
           <section className="panel space-y-3 p-5">
             <h2 className="section-title">Wording</h2>
             <Field
@@ -230,6 +290,12 @@ export default function App() {
                 ))}
               </ul>
             </div>
+          ) : null}
+
+          {saved ? (
+            <p role="status" className="mb-3 text-xs font-medium text-positive">
+              Saved {saved} in this browser.
+            </p>
           ) : null}
 
           {exportState.error ? (
