@@ -107,18 +107,20 @@ export default function App() {
             <button
               type="button"
               onClick={() => startNew()}
+              aria-label="New document"
               className="btn-quiet pressable inline-flex items-center gap-2"
             >
               <FilePlus2 aria-hidden="true" className="size-4" />
-              <span className="hidden sm:inline">New</span>
+              <span aria-hidden="true" className="hidden sm:inline">New</span>
             </button>
             <button
               type="button"
               onClick={save}
+              aria-label="Save document"
               className="btn-quiet pressable inline-flex items-center gap-2"
             >
               <Save aria-hidden="true" className="size-4" />
-              <span className="hidden sm:inline">Save</span>
+              <span aria-hidden="true" className="hidden sm:inline">Save</span>
             </button>
             <button
               type="button"

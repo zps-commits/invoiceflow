@@ -26,8 +26,12 @@ export default function DocumentSheet({
   return (
     <article
       data-document-sheet
-      className="sheet mx-auto w-full text-ink"
-      style={forPdf ? { width: 794, padding: 48 } : { maxWidth: 794, padding: '7%' }}
+      className={
+        forPdf
+          ? 'sheet mx-auto w-full text-ink'
+          : 'sheet mx-auto w-full max-w-[794px] p-4 text-ink sm:p-8 lg:p-12'
+      }
+      style={forPdf ? { width: 794, padding: 48 } : undefined}
     >
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
@@ -78,16 +82,16 @@ export default function DocumentSheet({
       <table className="mt-8 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-ink/15 text-left">
-            <th scope="col" className="py-2 pr-3 text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="py-2 pr-2 text-xs font-semibold sm:pr-3 uppercase tracking-wide text-muted">
               Description
             </th>
-            <th scope="col" className="w-20 py-2 px-2 text-right text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="w-12 py-2 px-1 text-right sm:w-20 sm:px-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Qty
             </th>
-            <th scope="col" className="w-28 py-2 px-2 text-right text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="w-20 py-2 px-1 text-right sm:w-28 sm:px-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Unit
             </th>
-            <th scope="col" className="w-28 py-2 pl-2 text-right text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="w-20 py-2 pl-1 text-right sm:w-28 sm:pl-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Amount
             </th>
           </tr>
@@ -95,14 +99,14 @@ export default function DocumentSheet({
         <tbody>
           {doc.items.map((item, index) => (
             <tr key={item.id} className="border-b border-line align-top">
-              <td className="py-2 pr-3 break-words">{item.description || '—'}</td>
-              <td className="py-2 px-2 text-right font-mono">
+              <td className="py-2 pr-2 break-words sm:pr-3">{item.description || '—'}</td>
+              <td className="py-2 px-1 text-right font-mono sm:px-2">
                 {quantity(item.quantityMilli, currency)}
               </td>
-              <td className="py-2 px-2 text-right font-mono">
+              <td className="py-2 px-1 text-right font-mono sm:px-2">
                 {money(item.unitPriceCents, currency)}
               </td>
-              <td className="py-2 pl-2 text-right font-mono">
+              <td className="py-2 pl-1 text-right font-mono sm:pl-2">
                 {money(totals.lineTotals[index] ?? 0, currency)}
               </td>
             </tr>
