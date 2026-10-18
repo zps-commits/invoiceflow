@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 import type { CommercialDocument, DocumentType } from '@/types/document';
 import { newDocument } from '@/domain/documents/factory';
 import { useDocumentReducer } from '@/hooks/useDocumentReducer';
@@ -8,11 +9,45 @@ import ItemsEditor from '@/components/forms/ItemsEditor';
 import TotalsEditor from '@/components/forms/TotalsEditor';
 import DocumentSheet from '@/components/preview/DocumentSheet';
 import Field from '@/components/ui/Field';
+import { downloadPdf, renderDocumentPdf } from '@/lib/pdf/render';
+import { documentProblems } from '@/domain/calculations/totals';
+
+/** One sentence per fault, so the message is never a code. */
+const PROBLEM_TEXT: Record<string, string> = {
+  'no-items': 'Add at least one item.',
+  'item-without-description': 'Every item needs a description.',
+  'invalid-quantity': 'A quantity must be a positive number.',
+  'invalid-price': 'A price cannot be negative.',
+  'charge-out-of-range': 'A charge must be between 0 and 100 percent.',
+  'issuer-without-name': 'Add your name or business.',
+  'client-without-name': 'Add the client name.',
+  'negative-total': 'The total cannot be below zero.',
+};
 
 export default function App() {
   const [initial] = useState<CommercialDocument>(() => newDocument('quote', []));
   const [doc, dispatch] = useDocumentReducer(initial);
   const totals = useMemo(() => totalsFor(doc), [doc]);
+  const problems = useMemo(() => documentProblems(doc), [doc]);
+  const [exportState, setExportState] = useState<{ error: string | null; busy: boolean }>({
+    error: null,
+    busy: false,
+  });
+
+  function exportPdf() {
+    setExportState({ error: null, busy: true });
+    try {
+      const result = renderDocumentPdf(doc, totals);
+      const saved = downloadPdf(result);
+      setExportState({
+        error: saved ? null : 'Your browser blocked the download.',
+        busy: false,
+      });
+    } catch {
+      // A failed render must not leave the button spinning forever.
+      setExportState({ error: 'The PDF could not be produced.', busy: false });
+    }
+  }
 
   return (
     <div className="min-h-dvh">
@@ -27,7 +62,24 @@ export default function App() {
         <div className="mx-auto flex max-w-[86rem] flex-wrap items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
           <div className="flex items-baseline gap-3">
             <span className="text-base font-semibold tracking-tight">InvoiceFlow</span>
-            <span className="text-sm text-muted">Quotes and invoices, as PDFs</span>
+            <span className="hidden text-sm text-muted sm:inline">Quotes and invoices, as PDFs</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {problems.length > 0 ? (
+              <span className="text-xs text-muted">
+                {problems.length} thing{problems.length === 1 ? '' : 's'} to fix
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={exportPdf}
+              disabled={problems.length > 0 || exportState.busy}
+              className="btn-primary pressable inline-flex items-center gap-2"
+            >
+              <Download aria-hidden="true" className="size-4" />
+              {exportState.busy ? 'Preparing…' : 'Export PDF'}
+            </button>
           </div>
         </div>
       </header>
@@ -162,7 +214,30 @@ export default function App() {
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-8">
-          <h2 className="section-title mb-3">Preview</h2>
+          <div className="mb-3 flex items-baseline justify-between gap-4">
+            <h2 className="section-title">Preview</h2>
+            <span className="text-xs text-muted">What the PDF will say</span>
+          </div>
+
+          {problems.length > 0 ? (
+            <div className="mb-3 rounded-field border border-negative/30 bg-negative/5 p-3">
+              <p className="text-xs font-medium text-negative">
+                Fix these before exporting
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-xs text-negative">
+                {problems.slice(0, 4).map((problem) => (
+                  <li key={`${problem.code}-${problem.detail}`}>{PROBLEM_TEXT[problem.code] ?? problem.code}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {exportState.error ? (
+            <p role="alert" className="mb-3 text-xs font-medium text-negative">
+              {exportState.error}
+            </p>
+          ) : null}
+
           <DocumentSheet document={doc} totals={totals} />
         </div>
       </main>
