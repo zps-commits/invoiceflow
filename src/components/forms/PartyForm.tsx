@@ -1,6 +1,7 @@
 import Field from '@/components/ui/Field';
 import type { Client, Issuer } from '@/types/document';
 import { LIMITS } from '@/domain/validation/limits';
+import LogoField from './LogoField';
 
 type IssuerProps = {
   kind: 'issuer';
@@ -55,6 +56,14 @@ export default function PartyForm(props: IssuerProps | ClientProps) {
         multiline
         rows={2}
       />
+      {isIssuer ? (
+        <LogoField
+          value={(value as Issuer).logoDataUrl}
+          onChange={(logoDataUrl) =>
+            (props.onChange as (p: Partial<Issuer>) => void)({ logoDataUrl })
+          }
+        />
+      ) : null}
       <Field
         label="Tax identification"
         value={value.taxId}

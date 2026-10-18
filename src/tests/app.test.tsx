@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '@/App';
 import { resetStorage, getSnapshot } from '@/lib/storage/documents';
@@ -202,5 +202,57 @@ describe('saving and history', () => {
     render(<App />);
     expect(screen.getByText(/not letting the page save anything/i)).toBeInTheDocument();
     spy.mockRestore();
+  });
+});
+
+describe('status and logo', () => {
+  it('offers the three local statuses and no Paid', async () => {
+    render(<App />);
+    const status = screen.getByLabelText(/^status$/i);
+    const options = within(status).getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(['Draft', 'Issued', 'Cancelled']);
+    expect(options).not.toContain('Paid');
+  });
+
+  it('keeps the chosen status on the saved document', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await fillMinimum(user);
+    await user.selectOptions(screen.getByLabelText(/^status$/i), 'issued');
+    await user.click(screen.getByRole('button', { name: /^save document$/i }));
+    expect(getSnapshot().documents[0]?.status).toBe('issued');
+  });
+
+  it('does not offer SVG to the file picker at all', () => {
+    render(<App />);
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    expect(input.accept).toBe('image/png,image/jpeg,image/webp');
+    expect(input.accept).not.toContain('svg');
+  });
+
+  it('refuses an SVG that gets past the picker', async () => {
+    render(<App />);
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    const svg = new File(['<svg onload="alert(1)"/>'], 'logo.svg', { type: 'image/svg+xml' });
+    // userEvent honours the accept attribute and never fires, which tests
+    // the browser rather than this code. The guard that matters is the one
+    // in the handler, for when the attribute is edited or bypassed.
+    Object.defineProperty(input, 'files', { value: [svg], configurable: true });
+    fireEvent.change(input);
+    expect(await screen.findByText(/use a png, jpeg or webp image/i)).toBeInTheDocument();
+  });
+
+  it('refuses an image past the size limit', async () => {
+    render(<App />);
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    const huge = new File([new Uint8Array(600 * 1024)], 'logo.png', { type: 'image/png' });
+    Object.defineProperty(input, 'files', { value: [huge], configurable: true });
+    fireEvent.change(input);
+    expect(await screen.findByText(/larger than/i)).toBeInTheDocument();
+  });
+
+  it('says the logo never leaves the browser', () => {
+    render(<App />);
+    expect(screen.getByText(/never uploaded/i)).toBeInTheDocument();
   });
 });

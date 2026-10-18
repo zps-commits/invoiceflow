@@ -180,6 +180,30 @@ export default function App() {
                 </p>
               </div>
 
+              <div>
+                <label htmlFor="doc-status" className="mb-1 block text-xs font-medium text-muted">
+                  Status
+                </label>
+                <select
+                  id="doc-status"
+                  className="field"
+                  value={doc.status}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'meta',
+                      patch: { status: e.target.value as CommercialDocument['status'] },
+                    })
+                  }
+                >
+                  <option value="draft">Draft</option>
+                  <option value="issued">Issued</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <p className="mt-1 text-xs leading-snug text-muted">
+                  Your own record. There is no Paid, because nothing here can verify a payment.
+                </p>
+              </div>
+
               <Field
                 label="Number"
                 value={doc.number}
