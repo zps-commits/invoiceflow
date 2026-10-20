@@ -1,0 +1,54 @@
+# Post do LinkedIn — português
+
+**Imagens:** `composed/1-cover.png` … `4-build.png`, nessa ordem (4:5).
+
+---
+
+A maioria das ferramentas de orçamento exporta o PDF tirando uma foto da
+página. O arquivo parece certo e não serve: o cliente não consegue
+selecionar o total para colar numa transferência, não consegue buscar
+dentro dele, e um leitor de tela não encontra absolutamente nada ali.
+
+O InvoiceFlow desenha o PDF — instrução por instrução, texto como texto.
+Essa decisão é o que dá números selecionáveis, paginação de verdade,
+cabeçalhos de tabela que se repetem nas páginas e um bloco de totais que
+nunca é cortado ao meio por uma quebra de página.
+
+O gerador em volta é propositalmente pequeno: sem conta, sem mensalidade,
+nada guardado em servidor. Quem manda quatro orçamentos por mês não
+precisa de assinatura para isso.
+
+Três decisões que vale dizer:
+
+• A ordem das operações está escrita e testada: totais de linha, depois o
+desconto, depois os acréscimos sobre a base já descontada — e a função
+devolve a base que usou, para o documento declarar isso em vez de deixar o
+cliente deduzir por que as contas fecham assim.
+• Dinheiro é centavo inteiro, arredondado uma vez por linha.
+• O logo aceita PNG, JPEG e WebP e recusa SVG, que pode carregar script.
+
+Duas coisas que eu errei primeiro:
+
+Os botões Novo e Salvar escondiam o rótulo abaixo do breakpoint pequeno e
+os ícones estavam ocultos para tecnologia assistiva — ou seja, no celular
+eles não tinham nome acessível nenhum. Minha primeira correção adicionou
+um segundo rótulo oculto e gerou o nome "Salvar Salvar documento",
+quebrando seis testes.
+
+E um teste pode afirmar a coisa errada de forma convincente: o teste de
+recusa do logo passava porque o navegador respeitava o atributo accept e
+nunca chamava o handler. Ele testava o seletor de arquivos, não a minha
+verificação. Agora são dois testes — um sobre a lista aceita, outro
+disparando o evento direto.
+
+React 19 · TypeScript · Vite · jsPDF · Tailwind v4
+100 testes · zero violações do axe em 1440, 768, 390 e 320 px, com um PDF
+real exportado, salvo, reaberto e baixado pelo verificador
+
+No ar: https://06-invoiceflow.vercel.app
+Código: https://github.com/zps-commits/invoiceflow
+
+Projeto de portfólio. Não emite documento fiscal, não faz cálculo de
+imposto, e nenhum número de cliente, usuário ou faturamento é afirmado.
+
+#TypeScript #React #Acessibilidade #Frontend #PDF
